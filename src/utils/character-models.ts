@@ -12,12 +12,97 @@ import { getPlayerColor } from './character-renderer';
 export interface CharacterModel {
   scene: THREE.Group;
   animations: THREE.AnimationClip[];
+  healthBar?: {
+    container: THREE.Group;
+    background: THREE.Mesh;
+    foreground: THREE.Mesh;
+    update: (health: number, maxHealth: number) => void;
+  };
+}
+
+// Global cache to store character models by country
+const characterModelCache = new Map<string, CharacterModel>();
+
+/**
+ * Creates a health bar that floats above the character's head
+ */
+function createHealthBar(maxHealth: number = 100) {
+  const container = new THREE.Group();
+  container.position.y = 2; // Position above head
+  
+  // Create background (gray bar)
+  const backgroundGeometry = new THREE.PlaneGeometry(1, 0.1);
+  const backgroundMaterial = new THREE.MeshBasicMaterial({
+    color: 0x444444,
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0.8
+  });
+  const background = new THREE.Mesh(backgroundGeometry, backgroundMaterial);
+  container.add(background);
+  
+  // Create foreground (health indicator)
+  const foregroundGeometry = new THREE.PlaneGeometry(1, 0.1);
+  const foregroundMaterial = new THREE.MeshBasicMaterial({
+    color: 0x00ff00,
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0.9
+  });
+  const foreground = new THREE.Mesh(foregroundGeometry, foregroundMaterial);
+  foreground.position.z = 0.01; // Slightly in front of background
+  container.add(foreground);
+  
+  // Health update function
+  const update = (health: number, maxHealth: number) => {
+    const healthPercent = Math.max(0, Math.min(1, health / maxHealth));
+    foreground.scale.x = healthPercent;
+    foreground.position.x = -0.5 * (1 - healthPercent); // Keep left-aligned
+    
+    // Update color based on health percentage
+    if (healthPercent > 0.6) {
+      (foregroundMaterial as THREE.MeshBasicMaterial).color.setHex(0x00ff00); // Green
+    } else if (healthPercent > 0.3) {
+      (foregroundMaterial as THREE.MeshBasicMaterial).color.setHex(0xffff00); // Yellow
+    } else {
+      (foregroundMaterial as THREE.MeshBasicMaterial).color.setHex(0xff0000); // Red
+    }
+    
+    // Show/hide based on health
+    container.visible = health > 0;
+  };
+  
+  // Make health bar always face camera
+  container.userData.updateRotation = (camera: THREE.Camera) => {
+    container.quaternion.copy(camera.quaternion);
+  };
+  
+  return { container, background, foreground, update };
 }
 
 /**
  * Creates a detailed character model for the specified country/character type
  */
-export function createCharacterModel(country: string): CharacterModel {
+export function createCharacterModel(country: string, options: { health?: number, maxHealth?: number } = {}): CharacterModel {
+  const { health = 100, maxHealth = 100 } = options;
+  
+  // Check if model already exists in cache
+  if (characterModelCache.has(country)) {
+    const cachedModel = characterModelCache.get(country)!;
+    const clonedModel: CharacterModel = {
+      scene: cachedModel.scene.clone(),
+      animations: cachedModel.animations
+    };
+    
+    // Add health bar to the cloned model
+    const healthBar = createHealthBar(maxHealth);
+    clonedModel.scene.add(healthBar.container);
+    healthBar.update(health, maxHealth);
+    clonedModel.healthBar = healthBar;
+    
+    return clonedModel;
+  }
+  
   const group = new THREE.Group();
   const color = getPlayerColor(country);
   
@@ -103,10 +188,22 @@ export function createCharacterModel(country: string): CharacterModel {
     createAttackAnimation()
   ];
   
-  return {
+  // Create the model with proper typing
+  const model: CharacterModel = {
     scene: group,
     animations
   };
+  
+  // Add health bar
+  const healthBar = createHealthBar(maxHealth);
+  group.add(healthBar.container);
+  healthBar.update(health, maxHealth);
+  model.healthBar = healthBar;
+  
+  // Store in cache for future use
+  characterModelCache.set(country, model);
+  
+  return model;
 }
 
 /**

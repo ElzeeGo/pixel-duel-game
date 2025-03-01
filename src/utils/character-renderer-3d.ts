@@ -19,6 +19,8 @@ export interface Character3DOptions {
   controls?: boolean;
   autoRotate?: boolean;
   useFallback?: boolean;
+  health?: number;
+  maxHealth?: number;
 }
 
 export interface CharacterModel {
@@ -26,6 +28,12 @@ export interface CharacterModel {
   animations: THREE.AnimationClip[];
   mixer?: THREE.AnimationMixer;
   actions?: Map<string, THREE.AnimationAction>;
+  healthBar?: {
+    container: THREE.Group;
+    background: THREE.Mesh;
+    foreground: THREE.Mesh;
+    update: (health: number, maxHealth: number) => void;
+  };
 }
 
 // Cache for loaded models to avoid reloading
@@ -139,12 +147,69 @@ export async function loadCharacterModel(
 }
 
 /**
+ * Creates a health bar that floats above the character's head
+ */
+function createHealthBar(maxHealth: number = 100): CharacterModel['healthBar'] {
+  const container = new THREE.Group();
+  container.position.y = 2; // Position above head
+  
+  // Create background (gray bar)
+  const backgroundGeometry = new THREE.PlaneGeometry(1, 0.1);
+  const backgroundMaterial = new THREE.MeshBasicMaterial({
+    color: 0x444444,
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0.8
+  });
+  const background = new THREE.Mesh(backgroundGeometry, backgroundMaterial);
+  container.add(background);
+  
+  // Create foreground (health indicator)
+  const foregroundGeometry = new THREE.PlaneGeometry(1, 0.1);
+  const foregroundMaterial = new THREE.MeshBasicMaterial({
+    color: 0x00ff00,
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0.9
+  });
+  const foreground = new THREE.Mesh(foregroundGeometry, foregroundMaterial);
+  foreground.position.z = 0.01; // Slightly in front of background
+  container.add(foreground);
+  
+  // Health update function
+  const update = (health: number, maxHealth: number) => {
+    const healthPercent = Math.max(0, Math.min(1, health / maxHealth));
+    foreground.scale.x = healthPercent;
+    foreground.position.x = -0.5 * (1 - healthPercent); // Keep left-aligned
+    
+    // Update color based on health percentage
+    if (healthPercent > 0.6) {
+      (foregroundMaterial as THREE.MeshBasicMaterial).color.setHex(0x00ff00); // Green
+    } else if (healthPercent > 0.3) {
+      (foregroundMaterial as THREE.MeshBasicMaterial).color.setHex(0xffff00); // Yellow
+    } else {
+      (foregroundMaterial as THREE.MeshBasicMaterial).color.setHex(0xff0000); // Red
+    }
+    
+    // Show/hide based on health
+    container.visible = health > 0;
+  };
+  
+  // Make health bar always face camera
+  container.userData.updateRotation = (camera: THREE.Camera) => {
+    container.quaternion.copy(camera.quaternion);
+  };
+  
+  return { container, background, foreground, update };
+}
+
+/**
  * Sets up a 3D scene for character rendering
  */
 export function setupCharacterScene(
   container: HTMLElement,
   options: Character3DOptions = {}
-): THREE.Scene {
+): { scene: THREE.Scene; camera: THREE.Camera } {
   const { shadows = true, controls = true, autoRotate = false } = options;
   
   // Calculate aspect ratio
@@ -246,14 +311,21 @@ export function setupCharacterScene(
       orbitControls.update();
     }
     
+    // Update health bar rotations to face camera
+    scene.traverse((object) => {
+      if (object.userData.updateRotation) {
+        object.userData.updateRotation(camera);
+      }
+    });
+    
     // Render scene
     renderer.render(scene, camera);
   };
   
   animate();
   
-  // Return scene for further manipulation
-  return scene;
+  // Return both scene and camera for external use
+  return { scene, camera };
 }
 
 /**
@@ -264,7 +336,7 @@ export async function renderCharacter3D(
   country: string,
   options: Character3DOptions = {}
 ): Promise<CharacterModel> {
-  const { animate = true, useFallback = false } = options;
+  const { animate = true, useFallback = false, health = 100, maxHealth = 100 } = options;
   
   // Load character model
   const model = await loadCharacterModel(country, { useFallback });
@@ -273,12 +345,17 @@ export async function renderCharacter3D(
   model.scene.position.set(0, 0, 0);
   model.scene.rotation.y = Math.PI;
   
+  // Add health bar
+  const healthBar = createHealthBar(maxHealth)!;
+  model.scene.add(healthBar.container);
+  healthBar.update(health, maxHealth);
+  model.healthBar = healthBar;
+  
   // Add to scene
   scene.add(model.scene);
   
   // Play idle animation if available and animation is enabled
   if (animate && model.actions && model.actions.size > 0) {
-    // Try to find idle animation, or use the first available
     const idleAction = model.actions.get('idle') || model.actions.get('Idle') || 
                       model.actions.values().next().value;
     

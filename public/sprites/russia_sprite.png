@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Russia Brawler Character -->
+  <rect width="32" height="32" fill="none"/>
+  
+  <!-- Body -->
+  <rect x="12" y="16" width="8" height="10" fill="#a855f7"/>
+  
+  <!-- Head -->
+  <circle cx="16" cy="12" r="6" fill="#f8d8b9"/>
+  
+  <!-- Ushanka Hat -->
+  <rect x="10" y="8" width="12" height="4" fill="#7f1d1d"/>
+  <rect x="8" y="10" width="2" height="2" fill="#7f1d1d"/>
+  <rect x="22" y="10" width="2" height="2" fill="#7f1d1d"/>
+  
+  <!-- Fists -->
+  <circle cx="9" cy="20" r="2" fill="#f8d8b9"/>
+  <circle cx="23" cy="20" r="2" fill="#f8d8b9"/>
+  
+  <!-- Boots -->
+  <rect x="12" y="26" width="3" height="2" fill="#4b5563"/>
+  <rect x="17" y="26" width="3" height="2" fill="#4b5563"/>
+</svg> 

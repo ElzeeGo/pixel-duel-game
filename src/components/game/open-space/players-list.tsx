@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Users } from "lucide-react";
+import { ChevronDown, ChevronUp, Users, Bot, Shield, Sword } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,14 +12,8 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-
-interface OnlinePlayer {
-  id: string;
-  name: string;
-  x: number;
-  y: number;
-  country: string;
-}
+import { OnlinePlayer } from "@/types/game";
+import { Progress } from "@/components/ui/progress";
 
 interface PlayersListProps {
   onlinePlayers: OnlinePlayer[];
@@ -58,6 +52,8 @@ export function PlayersList({ onlinePlayers }: PlayersListProps) {
         </div>
         <CardDescription>
           {onlinePlayers.length} player{onlinePlayers.length !== 1 && "s"} online
+          {" • "}
+          {onlinePlayers.filter(p => p.isNPC).length} NPC{onlinePlayers.filter(p => p.isNPC).length !== 1 && "s"}
         </CardDescription>
       </CardHeader>
       <div
@@ -77,27 +73,67 @@ export function PlayersList({ onlinePlayers }: PlayersListProps) {
                 {onlinePlayers.map((player) => (
                   <li
                     key={player.id}
-                    className="flex items-center justify-between p-2 rounded-md hover:bg-muted"
+                    className={cn(
+                      "flex flex-col p-2 rounded-md hover:bg-muted",
+                      player.isDead && "opacity-50"
+                    )}
                   >
-                    <div className="flex items-center">
-                      <div
-                        className="w-3 h-3 rounded-full mr-2"
-                        style={{ backgroundColor: getPlayerColor(player.country) }}
-                      />
-                      <span>{player.name}</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div
+                          className="w-3 h-3 rounded-full mr-2"
+                          style={{ backgroundColor: getPlayerColor(player.country) }}
+                        />
+                        <span className="flex items-center">
+                          {player.name}
+                          {player.isNPC && (
+                            <Bot className="h-3 w-3 ml-1 text-muted-foreground" />
+                          )}
+                          {player.isDead && (
+                            <span className="ml-2 text-xs text-red-500">
+                              (Dead)
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <Badge variant="outline" className="text-xs">
+                          {getClassName(player.country)}
+                        </Badge>
+                        {player.isAttacking && (
+                          <Sword className="h-3 w-3 ml-1 text-red-500" />
+                        )}
+                        {player.isDefending && (
+                          <Shield className="h-3 w-3 ml-1 text-blue-500" />
+                        )}
+                        {!player.isNPC && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="ml-2 h-7 px-2"
+                            disabled={player.isDead}
+                          >
+                            Challenge
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center">
-                      <Badge variant="outline" className="text-xs">
-                        {getClassName(player.country)}
-                      </Badge>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="ml-2 h-7 px-2"
-                        disabled
-                      >
-                        Challenge
-                      </Button>
+                    
+                    {/* Health bar */}
+                    <div className="mt-1">
+                      <div className="flex justify-between text-xs mb-1">
+                        <span>HP: {player.health}/{player.maxHealth}</span>
+                        <span>Points: {player.points}</span>
+                      </div>
+                      <Progress 
+                        value={(player.health / player.maxHealth) * 100} 
+                        className="h-1.5"
+                        indicatorClassName={cn(
+                          player.health > 60 ? "bg-green-500" :
+                          player.health > 30 ? "bg-yellow-500" :
+                          "bg-red-500"
+                        )}
+                      />
                     </div>
                   </li>
                 ))}

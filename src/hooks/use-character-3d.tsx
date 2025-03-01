@@ -42,7 +42,7 @@ export function useCharacter3D({
     if (!containerRef.current) return;
     
     // Setup scene
-    const newScene = setupCharacterScene(containerRef.current, options);
+    const { scene: newScene, camera } = setupCharacterScene(containerRef.current, options);
     setScene(newScene);
     
     // Load and render character

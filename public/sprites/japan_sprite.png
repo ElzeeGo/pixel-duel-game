@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Japan Samurai Character -->
+  <rect width="32" height="32" fill="none"/>
+  
+  <!-- Body -->
+  <rect x="12" y="16" width="8" height="10" fill="#ef4444"/>
+  
+  <!-- Head -->
+  <circle cx="16" cy="12" r="6" fill="#f8d8b9"/>
+  
+  <!-- Helmet -->
+  <path d="M10 12C10 8.68629 12.6863 6 16 6C19.3137 6 22 8.68629 22 12" stroke="#111827" stroke-width="2"/>
+  <rect x="9" y="12" width="14" height="2" fill="#111827"/>
+  
+  <!-- Sword -->
+  <rect x="20" y="16" width="8" height="1" fill="#6b7280"/>
+  <rect x="19" y="17" width="2" height="4" fill="#6b7280"/>
+  
+  <!-- Boots -->
+  <rect x="12" y="26" width="3" height="2" fill="#4b5563"/>
+  <rect x="17" y="26" width="3" height="2" fill="#4b5563"/>
+</svg> 
